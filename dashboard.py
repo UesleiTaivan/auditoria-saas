@@ -27,6 +27,7 @@ def realizar_login():
                     try:
                         # Validação via Streamlit Secrets
                         if usuario_input in st.secrets["usuarios"] and senha_input == st.secrets["usuarios"][usuario_input]:
+                            st.session_state.clear()
                             st.session_state.logado = True
                             st.session_state.usuario = usuario_input
                             st.rerun()
@@ -44,6 +45,7 @@ if realizar_login():
     st.sidebar.title(f"🏢 {st.session_state.usuario.upper()}")
     if st.sidebar.button("Encerrar Sessão (Sair)"):
         st.session_state.logado = False
+        st.session_state.clear()
         st.rerun()
 
     # 2. Carregamento de Dados com Cache e Isolamento

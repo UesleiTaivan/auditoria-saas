@@ -49,9 +49,10 @@ if realizar_login():
         st.session_state.logado = False
         st.rerun()
 
-    # 2. Função de Carregamento de Dados (Filtra por empresa)
+    # 2. Função de Carregamento de Dados (AJUSTADA)
     @st.cache_data
-    def load_data(empresa_ativa):
+    def load_data(usuario_logado):
+        # Forçamos a leitura do CSV original toda vez que o usuário mudar
         df = pd.read_csv('vendas_10k.csv')
         
         # Limpeza e Tipagem
@@ -61,13 +62,17 @@ if realizar_login():
         df['Hora_Venda'] = df['Data_Hora'].dt.hour
         df['Perc_Desconto'] = (df['Desconto_Aplicado'] / (df['Valor_Total'] + df['Desconto_Aplicado']) * 100).fillna(0)
         
-        # Filtro de Segurança: Isola os dados da empresa logada
+        # IMPORTANTE: O filtro deve acontecer aqui dentro para o cache entender a separação
         if 'Empresa' in df.columns:
-            df_filtrado = df[df['Empresa'] == empresa_ativa].copy()
+            # Filtramos apenas os dados da empresa que acabou de logar
+            df_filtrado = df[df['Empresa'] == usuario_logado].copy()
             return df_filtrado
-        return df # Se não tiver a coluna, retorna tudo (para teste)
+        
+        return df
 
+    # Chamada da função (garanta que está passando o usuário atual)
     dados_empresa = load_data(st.session_state.usuario)
+    
 
     # 3. Motor de IA (Isolation Forest)
     def detectar_anomalias(df_entrada):

@@ -49,26 +49,29 @@ if realizar_login():
         st.session_state.logado = False
         st.rerun()
 
-    # 2. Função de Carregamento de Dados (AJUSTADA)
+    # 2. Carregamento de Dados (AJUSTADO PARA FILTRAR REALMENTE)
     @st.cache_data
-    def load_data(usuario_logado):
-        # Forçamos a leitura do CSV original toda vez que o usuário mudar
+    def load_raw_data():
+        # Lê o arquivo completo uma única vez e guarda no cache
         df = pd.read_csv('vendas_10k.csv')
         
-        # Limpeza e Tipagem
+        # Limpeza básica e tipagem que serve para todas as empresas
         df['ID_Transacao'] = df['ID_Transacao'].astype(str)
         df['ID_Operador'] = df['ID_Operador'].astype(str)
         df['Data_Hora'] = pd.to_datetime(df['Data_Hora'])
         df['Hora_Venda'] = df['Data_Hora'].dt.hour
         df['Perc_Desconto'] = (df['Desconto_Aplicado'] / (df['Valor_Total'] + df['Desconto_Aplicado']) * 100).fillna(0)
-        
-        # IMPORTANTE: O filtro deve acontecer aqui dentro para o cache entender a separação
-        if 'Empresa' in df.columns:
-            # Filtramos apenas os dados da empresa que acabou de logar
-            df_filtrado = df[df['Empresa'] == usuario_logado].copy()
-            return df_filtrado
-        
         return df
+
+    # Primeiro, pegamos o arquivo completo (do cache)
+    df_completo = load_raw_data()
+
+    # AGORA O FILTRO REAL: Só pegamos o que é da empresa logada
+    # Isso acontece fora do cache, garantindo que mude a cada login
+    if 'Empresa' in df_completo.columns:
+        dados_empresa = df_completo[df_completo['Empresa'] == st.session_state.usuario].copy()
+    else:
+        dados_empresa = df_completo.copy()
 
     # Chamada da função (garanta que está passando o usuário atual)
     dados_empresa = load_data(st.session_state.usuario)

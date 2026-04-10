@@ -5,19 +5,27 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 
 # 1. Configurações de Layout
-st.set_page_config(page_title="Nexus IA: Inteligência & Auditoria ©", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Nexus IA: Inteligência & Auditoria ©", page_icon="logo.png", layout="wide")
 
-# --- SISTEMA DE LOGIN ---
+# --- FUNÇÃO DE LOGIN (ATUALIZADA COM LOGO) ---
 def realizar_login():
     if "logado" not in st.session_state:
         st.session_state.logado = False
 
     if not st.session_state.logado:
+        # Colunas para centralizar
         _, col_central, _ = st.columns([1, 2, 1])
+        
         with col_central:
-            st.markdown("## 🛡️ Nexus IA: Inteligência & Auditoria")
-            st.info("Portal de Auditoria e Gestão de Fraudes")
+            # --- NOVA LOGO PROFISSIONAL (Conceito Shield) ---
+            # Adiciona a imagem da logo, centralizando-a
+            # 'use_container_width=True' faz ela se ajustar à coluna central
+            st.image('logo.png', use_container_width=True)
             
+            # Subtítulo complementar (opcional, já que está na logo)
+            # st.markdown("<h4 style='text-align: center;'>Portal de Inteligência</h4>", unsafe_allow_html=True)
+            st.divider() # Uma linha sutil para separar a logo do formulário
+
             with st.form("form_acesso"):
                 usuario_input = st.text_input("ID da Empresa")
                 senha_input = st.text_input("Senha de Acesso", type="password")
@@ -42,6 +50,7 @@ def realizar_login():
 if realizar_login():
     
     # Barra Lateral
+    st.sidebar.image('logo.png', use_container_width=True)
     st.sidebar.title(f"🏢 {st.session_state.usuario.upper()}")
     if st.sidebar.button("Encerrar Sessão (Sair)"):
         st.session_state.logado = False

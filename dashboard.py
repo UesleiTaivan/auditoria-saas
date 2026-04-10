@@ -148,8 +148,31 @@ if realizar_login():
             # Gráficos de BI
             g1, g2 = st.columns(2)
             with g1:
-                st.write("**🏆 Top 10 Produtos Mais Vendidos**")
-                st.bar_chart(dados_empresa.groupby('Descricao_Produto')['Quantidade'].sum().sort_values(ascending=False).head(10))
+                st.write("**🏆 Top 10 Produtos (Qtd Vendida)**")
+                
+                # Prepara os dados: Agrupa por produto e soma a quantidade
+                top_produtos = dados_empresa.groupby('Descricao_Produto')['Quantidade'].sum().sort_values(ascending=False).head(10)
+                
+                if not top_produtos.empty:
+                    fig, ax = plt.subplots(figsize=(8, 5))
+                    
+                    # Cria as barras (usando uma cor verde para diferenciar do faturamento)
+                    bars = ax.bar(top_produtos.index, top_produtos.values, color='#2ca02c')
+                    
+                    # ADICIONA AS LEGENDAS (O quantitativo em cima de cada barra)
+                    ax.bar_label(bars, labels=[f'{int(x)}' for x in top_produtos.values], padding=3, fontweight='bold')
+                    
+                    # Ajustes de layout para não cortar os nomes dos produtos
+                    plt.xticks(rotation=45, ha='right')
+                    ax.set_ylabel("Unidades Vendidas")
+                    
+                    # Remove as bordas desnecessárias para ficar mais "clean"
+                    ax.spines['top'].set_visible(False)
+                    ax.spines['right'].set_visible(False)
+                    
+                    st.pyplot(fig)
+                else:
+                    st.warning("Sem dados de produtos para exibir.")
             with g2:
                 st.write("**💰 Faturamento por Pagamento**")
                 # Prepara os dados

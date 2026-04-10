@@ -22,7 +22,7 @@ def realizar_login():
             # 'use_container_width=True' faz ela se ajustar à coluna central
             _, col_logo, _ = st.columns([1, 2, 1])
             with col_logo:
-                st.image('logo.png', width=300)
+                st.image('logo.png', use_container_width=True)
             
             # Subtítulo complementar (opcional, já que está na logo)
             # st.markdown("<h4 style='text-align: center;'>Portal de Inteligência</h4>", unsafe_allow_html=True)

@@ -110,13 +110,25 @@ if realizar_login():
             st.dataframe(fraudes[col_v].sort_values(by='Desconto_Aplicado', ascending=False), use_container_width=True)
             
             st.divider()
-            st.subheader("🧠 Perfil de Risco (Análise de Descontos)")
+            st.subheader("🧠 Perfil de Risco (Análise de Descontos em R$)")
             c1, c2 = st.columns([1, 2])
             with c1:
                 st.info("Concentração de descontos nas anomalias identificadas.")
             with c2:
-                fig, ax = plt.subplots(figsize=(8, 3))
-                fraudes['Desconto_Aplicado'].hist(bins=20, ax=ax, color='red', alpha=0.7)
+                st.write("**📊 Frequência de Descontos Suspeitos em R$**")
+                fig, ax = plt.subplots(figsize=(8, 4))
+                
+                # Criando o histograma e pegando os valores de cada barra (n)
+                n, bins, patches = ax.hist(fraudes['Desconto_Aplicado'], bins=10, color='red', alpha=0.7, edgecolor='white')
+                
+                # Adiciona o quantitativo (contagem) em cima de cada barra do histograma
+                for i in range(len(patches)):
+                    if n[i] > 0: # Só coloca legenda se houver valor
+                        ax.text(bins[i] + (bins[i+1]-bins[i])/2, n[i], int(n[i]), 
+                                ha='center', va='bottom', fontweight='bold')
+                
+                ax.set_xlabel("Valor do Desconto (R$)")
+                ax.set_ylabel("Quantidade de Transações")
                 st.pyplot(fig)
         else:
             st.info("Utilize o botão lateral para iniciar a auditoria.")
@@ -136,11 +148,22 @@ if realizar_login():
             # Gráficos de BI
             g1, g2 = st.columns(2)
             with g1:
-                st.write("**🏆 Top 10 Produtos**")
+                st.write("**🏆 Top 10 Produtos Mais Vendidos**")
                 st.bar_chart(dados_empresa.groupby('Descricao_Produto')['Quantidade'].sum().sort_values(ascending=False).head(10))
             with g2:
                 st.write("**💰 Faturamento por Pagamento**")
-                st.bar_chart(dados_empresa.groupby('Metodo_Pagamento')['Valor_Total'].sum())
+                # Prepara os dados
+                pagamentos = dados_empresa.groupby('Metodo_Pagamento')['Valor_Total'].sum()
+                
+                fig, ax = plt.subplots(figsize=(8, 5))
+                bars = ax.bar(pagamentos.index, pagamentos.values, color='#1f77b4')
+                
+                # Adiciona os valores em cima das barras formatados como Moeda
+                ax.bar_label(bars, labels=[f'R$ {x:,.2f}' for x in pagamentos.values], padding=3)
+                
+                ax.set_ylabel("Total Vendido")
+                plt.xticks(rotation=45)
+                st.pyplot(fig)
 
             # Tabela de Performance
             st.write("**👥 Produtividade por Operador**")

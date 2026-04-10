@@ -23,6 +23,23 @@ def realizar_login():
             _, col_logo, _ = st.columns([1, 2, 1])
             with col_logo:
                 st.image('logo.png', use_container_width=True)
+                st.markdown(
+                    """
+                    <div style="
+                        background-color: #e8f4f9; 
+                        padding: 10px; 
+                        border-radius: 5px; 
+                        border-left: 5px solid #007bff;
+                        text-align: center;
+                        color: #0c5460;
+                        font-family: sans-serif;
+                        margin-bottom: 15px;
+                    ">
+                        Portal de Auditoria e Gestão de Fraudes
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
             
             # Subtítulo complementar (opcional, já que está na logo)
             # st.markdown("<h4 style='text-align: center;'>Portal de Inteligência</h4>", unsafe_allow_html=True)

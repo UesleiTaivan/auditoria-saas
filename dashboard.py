@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
-from pycaret.anomaly import load_model, predict_model
-import shap
 import matplotlib.pyplot as plt
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import LabelEncoder
 
-# 1. Configuração de Página
-st.set_page_config(page_title="Auditoria SaaS", page_icon="🛡️", layout="wide")
-st.title("🛡️ Sistema de Auditoria e Gestão Inteligente")
+# 1. Configuração e Estilo
+st.set_page_config(page_title="Sentinela Varejo", page_icon="🛡️", layout="wide")
+st.title("🛡️ Sentinela Varejo: Auditoria & Gestão")
 
-# 2. Carregamento de Dados e Cache do Modelo
+# 2. Carregando os Dados
 @st.cache_data
 def load_data():
     df = pd.read_csv('vendas_10k.csv')
@@ -17,92 +17,100 @@ def load_data():
     df['Perc_Desconto'] = (df['Desconto_Aplicado'] / (df['Valor_Total'] + df['Desconto_Aplicado']) * 100).fillna(0)
     return df
 
-@st.cache_resource
-def get_model():
-    return load_model('modelo_auditoria_varejo')
-
 df = load_data()
 
-# Abas de navegação
+# 3. Motor de IA Moderno (Scikit-Learn)
+def executar_ia(dados):
+    df_ia = dados[['Hora_Venda', 'Quantidade', 'Preco_Unitario', 'Desconto_Aplicado', 'Valor_Total', 'Metodo_Pagamento']].copy()
+    le = LabelEncoder()
+    df_ia['Metodo_Pagamento'] = le.fit_transform(df_ia['Metodo_Pagamento'])
+    
+    # Isolation Forest: Algoritmo de ponta para detectar anomalias
+    modelo = IsolationForest(contamination=0.02, random_state=42)
+    modelo.fit(df_ia)
+    
+    dados['Anomaly_Score'] = modelo.decision_function(df_ia)
+    dados['Eh_Anomalia'] = modelo.predict(df_ia) # -1 para suspeito, 1 para normal
+    return dados
+
+# Interface em Abas
 aba_auditoria, aba_gerencial = st.tabs(["🔍 Auditoria de Fraudes", "📊 Visão Gerencial"])
 
-# --- ABA 1: AUDITORIA (RESTAURADA E COMPLETA) ---
+# --- ABA 1: AUDITORIA (COM DESCRIÇÃO DO PRODUTO) ---
 with aba_auditoria:
-    st.sidebar.header("Painel de Controle")
-    
-    if st.sidebar.button("Executar Varredura Diária"):
-        with st.spinner('Analisando padrões de fraude...'):
-            modelo = get_model()
-            resultados = predict_model(modelo, data=df)
-            limiar = resultados['Anomaly_Score'].quantile(0.98) 
-            fraudes = resultados[resultados['Anomaly_Score'] >= limiar]
-            
-            res_final = df.iloc[fraudes.index].copy()
-            res_final['Nível_Suspeita'] = fraudes['Anomaly_Score']
-            
-            st.session_state['df_fraudes'] = res_final
+    if st.sidebar.button("Executar Varredura Inteligente"):
+        with st.spinner('IA analisando padrões comportamentais...'):
+            res = executar_ia(df)
+            st.session_state['fraudes'] = res[res['Eh_Anomalia'] == -1].copy()
             st.session_state['ia_pronta'] = True
 
     if st.session_state.get('ia_pronta'):
-        res_final = st.session_state['df_fraudes']
-        
-        c_aud1, c_aud2 = st.columns(2)
-        c_aud1.metric("Transações Analisadas", len(df))
-        c_aud2.metric("Alertas Críticos", len(res_final))
+        fraudes = st.session_state['fraudes']
+        st.success(f"Varredura concluída! {len(fraudes)} transações suspeitas identificadas.")
         
         st.subheader("⚠️ Relatório de Transações Suspeitas")
-        # RESTAURADO: Colunas ID_Operador, Desconto_Aplicado e Valor_Total lado a lado
-        cols_relatorio = ['ID_Transacao', 'ID_Operador', 'Hora_Venda', 'Metodo_Pagamento', 'Desconto_Aplicado', 'Valor_Total', 'Nível_Suspeita']
-        st.dataframe(res_final[cols_relatorio].sort_values(by='Nível_Suspeita', ascending=False), use_container_width=True)
+        
+        # ADICIONADA: 'Descricao_Produto' e 'Quantidade' para conferência matemática
+        cols_auditoria = [
+            'ID_Transacao', 
+            'ID_Operador', 
+            'Descricao_Produto', 
+            'Quantidade', 
+            'Preco_Unitario',
+            'Desconto_Aplicado', 
+            'Valor_Total',
+            'Hora_Venda'
+        ]
+        
+        st.dataframe(
+            fraudes[cols_auditoria].sort_values(by='Desconto_Aplicado', ascending=False), 
+            use_container_width=True
+        )
 
         st.divider()
-
-        # INVESTIGAÇÃO SHAP
-        st.subheader("🧠 Justificativa Detalhada da IA")
-        lista_ids = res_final.sort_values(by='Nível_Suspeita', ascending=False)['ID_Transacao'].tolist()
-        id_selecionado = st.selectbox("Selecione o ID para diagnóstico:", lista_ids)
-
-        if id_selecionado:
-            idx = df[df['ID_Transacao'] == id_selecionado].index[0]
-            col_tr = ['Hora_Venda', 'Quantidade', 'Preco_Unitario', 'Desconto_Aplicado', 'Valor_Total', 'Metodo_Pagamento']
-            
-            modelo = get_model()
-            pipeline, model_iso = modelo[:-1], modelo[-1]
-            lin_transf = pipeline.transform(df.iloc[[idx]][col_tr])
-            
-            explainer = shap.TreeExplainer(model_iso)
-            shap_v = explainer.shap_values(lin_transf)
-            
-            plt.clf()
-            fig, ax = plt.subplots(figsize=(10, 4))
-            shap.plots.bar(shap.Explanation(values=shap_v[0], data=lin_transf.iloc[0], feature_names=lin_transf.columns), show=False)
-            plt.tight_layout()
-            st.pyplot(fig)
-            plt.close(fig)
+        st.subheader("🧠 Por que estes itens foram marcados?")
+        
+        # Explicação estratégica para o dono do mercado
+        st.info("""
+        **Dica de Auditoria:** Se uma transação tem 'Desconto 0' mas foi marcada pela IA, verifique se a multiplicação de 
+        (Quantidade x Preço Unitário) condiz com o Valor Total. A IA detecta quando o preço do produto foi alterado 
+        manualmente no caixa sem autorização.
+        """)
 
 # --- ABA 2: VISÃO GERENCIAL ---
 with aba_gerencial:
     st.subheader("📈 Performance e Comportamento da Loja")
     
-    faturamento = df['Valor_Total'].sum()
+    faturamento_total = df['Valor_Total'].sum()
     c1, c2, c3 = st.columns(3)
-    c1.metric("Faturamento Total", f"R$ {faturamento:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    c2.metric("Média de Desconto", f"{df['Perc_Desconto'].mean():.2f}%")
-    c3.metric("Ticket Médio", f"R$ {df.groupby('ID_Transacao')['Valor_Total'].sum().mean():.2f}".replace(".", ","))
+    c1.metric("Faturamento Total", f"R$ {faturamento_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c2.metric("Ticket Médio", f"R$ {df.groupby('ID_Transacao')['Valor_Total'].sum().mean():.2f}".replace(".", ","))
+    c3.metric("Média de Desconto", f"{df['Perc_Desconto'].mean():.2f}%")
 
     st.divider()
 
+    # Linha de Gráficos de BI
     g1, g2 = st.columns(2)
     with g1:
-        st.write("**🏆 Top Produtos (Volume)**")
+        st.write("**🏆 Top 10 Produtos (Volume)**")
         st.bar_chart(df.groupby('Descricao_Produto')['Quantidade'].sum().sort_values(ascending=False).head(10))
+    
     with g2:
-        st.write("**💰 Faturamento por Método**")
-        st.bar_chart(df.groupby('Metodo_Pagamento')['Valor_Total'].sum())
+        st.write("**💰 Faturamento por Método de Pagamento**")
+        fatur_met = df.groupby('Metodo_Pagamento')['Valor_Total'].sum()
+        st.bar_chart(fatur_met)
 
-    st.write("**📊 Fechamento por Operador**")
+    # Tabela de Produtividade (Restaurada)
+    st.write("**📊 Fechamento Detalhado por Operador**")
     fatur_op = df.groupby('ID_Operador')['Valor_Total'].sum()
     qtd_op = df.groupby('ID_Operador')['ID_Transacao'].nunique()
-    fech = pd.DataFrame({'Qtd_Operações': qtd_op, 'Faturamento_Total': fatur_op}).reset_index().sort_values(by='Faturamento_Total', ascending=False)
-    fech['Faturamento_Total'] = fech['Faturamento_Total'].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-    st.table(fech)
+    
+    fech_completo = pd.DataFrame({
+        'Qtd_Operações': qtd_op,
+        'Faturamento_Total': fatur_op
+    }).reset_index().sort_values(by='Faturamento_Total', ascending=False)
+
+    fech_completo['Faturamento_Total'] = fech_completo['Faturamento_Total'].apply(
+        lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    )
+    st.table(fech_completo)

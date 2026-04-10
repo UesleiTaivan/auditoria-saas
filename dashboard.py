@@ -15,7 +15,7 @@ def realizar_login():
     if not st.session_state.logado:
         _, col_central, _ = st.columns([1, 2, 1])
         with col_central:
-            st.markdown("## 🛡️ Sentinela Varejo")
+            st.markdown("## 🛡️ Nexus IA: Inteligência & Auditoria")
             st.info("Portal de Auditoria e Gestão de Fraudes")
             
             with st.form("form_acesso"):

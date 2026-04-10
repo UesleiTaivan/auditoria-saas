@@ -5,7 +5,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import LabelEncoder
 
 # 1. Configurações de Layout
-st.set_page_config(page_title="Sentinela Varejo", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="Nexus IA: Inteligência & Auditoria ©", page_icon="🛡️", layout="wide")
 
 # --- SISTEMA DE LOGIN ---
 def realizar_login():
